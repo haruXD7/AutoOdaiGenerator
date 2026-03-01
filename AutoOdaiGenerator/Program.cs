@@ -4,65 +4,100 @@ using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 class Program
 {
-    static void Main()
+    static async Task Main()
     {
-        Console.WriteLine("Generating daily topic image...");
+        Console.WriteLine("Generating AI topics...");
 
-        // 実行フォルダ取得
-        var basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+        var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+        if (string.IsNullOrEmpty(apiKey))
+            throw new Exception("API Key not found.");
 
-        // JSONパス
-        var jsonPath = Path.Combine(basePath, "topics.json");
+        var topics = await GenerateTopics(apiKey);
 
-        var json = File.ReadAllText(jsonPath);
-        var data = JsonSerializer.Deserialize<TopicData>(json);
+        if (topics.Count == 0)
+            throw new Exception("No topics generated.");
 
-        if (data?.Topics == null || data.Topics.Count == 0)
-            throw new Exception("No topics found.");
+        GenerateImage(topics);
 
-        // 日付で固定シード
-        string seed = DateTime.UtcNow.ToString("yyyy-MM-dd");
-        var random = new Random(seed.GetHashCode());
+        Console.WriteLine("Done.");
+    }
 
-        string topic = data.Topics[random.Next(data.Topics.Count)];
+    static async Task<List<string>> GenerateTopics(string apiKey)
+    {
+        using var client = new HttpClient();
 
-        // 画像サイズ
-        int width = 1000;
-        int height = 500;
+        var url =
+            $"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={apiKey}";
 
-        using var image = new Image<Rgba32>(width, height, new Rgba32(30, 30, 40));
+        var requestBody = new
+        {
+            contents = new[]
+            {
+                new
+                {
+                    parts = new[]
+                    {
+                        new { text = "哲学的で深い議論用のお題を5つ、日本語で箇条書きで出力してください。" }
+                    }
+                }
+            }
+        };
 
-        // ✅ フォントパスを実行フォルダ基準で取得
+        var response = await client.PostAsync(
+            url,
+            new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json")
+        );
+
+        var json = await response.Content.ReadAsStringAsync();
+
+        var doc = JsonDocument.Parse(json);
+
+        var text = doc.RootElement
+            .GetProperty("candidates")[0]
+            .GetProperty("content")
+            .GetProperty("parts")[0]
+            .GetProperty("text")
+            .GetString();
+
+        return text!
+            .Split('\n')
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.TrimStart('-', '・', '1', '2', '3', '4', '5', '.', ' '))
+            .ToList();
+    }
+
+    static void GenerateImage(List<string> topics)
+    {
+        var basePath = Directory.GetCurrentDirectory();
         var fontPath = Path.Combine(basePath, "Fonts", "NotoSansJP-Regular.ttf");
+        var outputPath = Path.Combine(basePath, "today.png");
 
         var fontCollection = new FontCollection();
         var fontFamily = fontCollection.Add(fontPath);
 
-        var titleFont = fontFamily.CreateFont(40);
-        var bodyFont = fontFamily.CreateFont(36);
+        var titleFont = fontFamily.CreateFont(42);
+        var bodyFont = fontFamily.CreateFont(34);
+
+        using var image = new Image<Rgba32>(1200, 800, new Rgba32(20, 20, 30));
 
         image.Mutate(ctx =>
         {
-            ctx.DrawText("今日のお題", titleFont, Color.Orange, new PointF(50, 100));
-            ctx.DrawText(topic, bodyFont, Color.White, new PointF(50, 200));
+            ctx.DrawText("Today's AI Topics", titleFont, Color.Orange, new PointF(60, 80));
+
+            float y = 180;
+
+            foreach (var topic in topics.Take(5))
+            {
+                ctx.DrawText("・" + topic, bodyFont, Color.White, new PointF(80, y));
+                y += 90;
+            }
         });
 
-        // 出力も実行フォルダ基準にしておくと安全
-        var repoRoot = Directory.GetCurrentDirectory();
-        var outputPath = Path.Combine(repoRoot, "today.png");
         image.Save(outputPath);
-
-        Console.WriteLine("Done.");
     }
-}
-
-class TopicData
-{
-    [JsonPropertyName("topics")]
-    public List<string> Topics { get; set; } = new();
 }
