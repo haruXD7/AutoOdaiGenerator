@@ -96,9 +96,17 @@ class Program
     }
     static void GenerateImage(List<string> topics)
     {
-        var basePath = Directory.GetCurrentDirectory();
-        var fontPath = Path.Combine(basePath, "Fonts", "NotoSansJP-Regular.ttf");
-        var outputPath = Path.Combine(basePath, "today.png");
+        var exePath = AppDomain.CurrentDomain.BaseDirectory;
+        var fontPath = Path.Combine(exePath, "Fonts", "NotoSansJP-Regular.ttf");
+        var outputPath = Path.Combine(exePath, "today.png");
+
+        // デバッグ用にパスをコンソールに出力するとGitHub Actionsのログで確認できます
+        Debug.WriteLine($"Checking font at: {fontPath}");
+
+        if (!File.Exists(fontPath))
+        {
+            throw new FileNotFoundException($"Font file not found at {fontPath}");
+        }
 
         var fontCollection = new FontCollection();
         var fontFamily = fontCollection.Add(fontPath);
