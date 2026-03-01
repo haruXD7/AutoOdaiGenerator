@@ -19,7 +19,10 @@
     <None Update="topics.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="workflows\daily.yml">
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include=".github\workflows\daily.yml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
