@@ -53,7 +53,8 @@ class Program
         });
 
         // 出力も実行フォルダ基準にしておくと安全
-        var outputPath = Path.Combine(basePath, "today.png");
+        var repoRoot = Directory.GetCurrentDirectory();
+        var outputPath = Path.Combine(repoRoot, "today.png");
         image.Save(outputPath);
 
         Console.WriteLine("Done.");
