@@ -3,6 +3,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -13,7 +14,10 @@ class Program
         Console.WriteLine("Generating daily topic image...");
 
         // JSON読み込み
-        string json = File.ReadAllText("topics.json");
+        var basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        var jsonPath = Path.Combine(basePath!, "topics.json");
+
+        var json = File.ReadAllText(jsonPath);
         var data = JsonSerializer.Deserialize<TopicData>(json);
 
         if (data?.Topics == null || data.Topics.Count == 0)
