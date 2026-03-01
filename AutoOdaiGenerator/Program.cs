@@ -96,9 +96,12 @@ class Program
     }
     static void GenerateImage(List<string> topics)
     {
-        var exePath = AppDomain.CurrentDomain.BaseDirectory;
+
+
+        var exePath = Environment.GetEnvironmentVariable("GITHUB_WORKSPACE") ?? AppDomain.CurrentDomain.BaseDirectory;
         var fontPath = Path.Combine(exePath, "Fonts", "NotoSansJP-Regular.ttf");
         var outputPath = Path.Combine(exePath, "today.png");
+
 
         // デバッグ用にパスをコンソールに出力するとGitHub Actionsのログで確認できます
         Debug.WriteLine($"Checking font at: {fontPath}");
