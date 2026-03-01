@@ -1,0 +1,33 @@
+name: Generate Daily Topic
+
+on:
+  workflow_dispatch:   # 手動実行ボタンを出す
+  schedule:
+    - cron: '5 15 * * *'  # JST 0:05（UTC 15:05）
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Run
+        run: dotnet run --project AutoOdaiGenerator/AutoOdaiGenerator.csproj --configuration Release
+
+      - name: Commit and Push Image
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add today.png
+          git commit -m "Update daily topic" || echo "No changes"
+          git push
