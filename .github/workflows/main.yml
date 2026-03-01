@@ -22,7 +22,7 @@ jobs:
         run: dotnet restore
 
       - name: Run
-        run: dotnet run --configuration Release
+        run: dotnet run --project AutoOdaiGenerator/AutoOdaiGenerator.csproj --configuration Release
 
       - name: Commit and Push Image
         run: |
