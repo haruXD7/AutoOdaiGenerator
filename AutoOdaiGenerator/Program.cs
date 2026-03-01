@@ -13,9 +13,11 @@ class Program
     {
         Console.WriteLine("Generating daily topic image...");
 
-        // JSON読み込み
-        var basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        var jsonPath = Path.Combine(basePath!, "topics.json");
+        // 実行フォルダ取得
+        var basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+
+        // JSONパス
+        var jsonPath = Path.Combine(basePath, "topics.json");
 
         var json = File.ReadAllText(jsonPath);
         var data = JsonSerializer.Deserialize<TopicData>(json);
@@ -23,20 +25,24 @@ class Program
         if (data?.Topics == null || data.Topics.Count == 0)
             throw new Exception("No topics found.");
 
-        // 日付で固定
+        // 日付で固定シード
         string seed = DateTime.UtcNow.ToString("yyyy-MM-dd");
         var random = new Random(seed.GetHashCode());
 
         string topic = data.Topics[random.Next(data.Topics.Count)];
 
-        // 画像生成
+        // 画像サイズ
         int width = 1000;
         int height = 500;
 
         using var image = new Image<Rgba32>(width, height, new Rgba32(30, 30, 40));
 
+        // ✅ フォントパスを実行フォルダ基準で取得
+        var fontPath = Path.Combine(basePath, "Fonts", "NotoSansJP-Regular.ttf");
+
         var fontCollection = new FontCollection();
-        var fontFamily = fontCollection.Add("NotoSansJP-Regular.ttf");
+        var fontFamily = fontCollection.Add(fontPath);
+
         var titleFont = fontFamily.CreateFont(40);
         var bodyFont = fontFamily.CreateFont(36);
 
@@ -46,7 +52,9 @@ class Program
             ctx.DrawText(topic, bodyFont, Color.White, new PointF(50, 200));
         });
 
-        image.Save("today.png");
+        // 出力も実行フォルダ基準にしておくと安全
+        var outputPath = Path.Combine(basePath, "today.png");
+        image.Save(outputPath);
 
         Console.WriteLine("Done.");
     }
