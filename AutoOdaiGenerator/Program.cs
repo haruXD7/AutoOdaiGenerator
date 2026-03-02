@@ -17,20 +17,49 @@ class Program
         if (string.IsNullOrEmpty(apiKey))
             throw new Exception("API Key not found.");
 
-        var topics = await GenerateTopics(apiKey);
+        // 共通のプロンプト（末尾の"テーマは..." 行は各テーマごとに渡す）
+        var commonPrompt = string.Join("\n",
+            "フレンドと話すお題を5つだしてください。",
+            "日本語で箇条書きで出力してください。",
+            "ですます口調はやめてください。",
+            "ちょっと深い話ができるようなものにしてください",
+            "毎回ランダムなものにしてください、ただし時々以前と被ってもいいです。",
+            "余計な解説は不要です。"
+        );
 
-        if (topics.Count == 0)
+        // ここにテーマごとの (出力ファイル名, テーマ固有の行) を追加する
+        var themes = new[]
         {
-            Console.WriteLine("No topics generated. Check API response.");
-            return;
-        }
+            new { FileName = "today_vrchat.png", ThemeLine = "テーマはVRCHATのような仮想空間についてにしてください。" },
+            new { FileName = "today_ai.png", ThemeLine = "テーマはAIと社会についてにしてください。" },
+            new { FileName = "today_world_news.png", ThemeLine = "テーマは１か月以内の世界情勢についてにしてください" },
+        };
 
-        GenerateImage(topics);
+        foreach (var t in themes)
+        {
+            Console.WriteLine($"Processing theme -> {t.FileName} : {t.ThemeLine}");
+            await ProcessTheme(apiKey, t.FileName, commonPrompt, t.ThemeLine);
+        }
 
         Console.WriteLine("Done.");
     }
 
-    static async Task<List<string>> GenerateTopics(string apiKey)
+    static async Task ProcessTheme(string apiKey, string outputFileName, string commonPrompt, string themeLine)
+    {
+        var userPrompt = string.Join("\n", commonPrompt, themeLine);
+
+        var topics = await GenerateTopics(apiKey, userPrompt);
+
+        if (topics.Count == 0)
+        {
+            Console.WriteLine($"No topics generated for {outputFileName}. Check API response.");
+            return;
+        }
+
+        GenerateImage(topics, outputFileName);
+    }
+
+    static async Task<List<string>> GenerateTopics(string apiKey, string userText)
     {
         using var client = new HttpClient();
         // ブラウザで確認した最新のモデル名を使用
@@ -45,13 +74,7 @@ class Program
                     role = "user",
                     parts = new[]
                     {
-                                            new { text = "VRCHATでフレンドと話すお題を5つ、日本語で箇条書きで出力してください。" +
-                                                        "ですます口調はやめてください。" +
-                                                        "ちょっと深い話ができるようなものにしてください" +
-                                                        "VRCHATのような仮想空間をテーマにしてみてください。" +
-                                                        "毎日違うテーマにしてください" +
-                                                        "余計な解説は不要です。" }
-
+                        new { text = userText }
                     }
                 }
             }
@@ -87,7 +110,7 @@ class Program
             .ToList();
     }
 
-    static void GenerateImage(List<string> topics)
+    static void GenerateImage(List<string> topics, string outputFileName)
     {
         // GitHub Actions環境とローカル両方で安定するパス取得
         var workingDir = Directory.GetCurrentDirectory();
@@ -96,8 +119,10 @@ class Program
         // フォントはビルド出力（exeDir）にある Fonts フォルダを参照
         var fontPath = Path.Combine(exeDir, "Fonts", "NotoSansJP-Regular.ttf");
 
-        // 画像はカレントディレクトリ（リポジトリのルート）に保存
-        var outputPath = Path.Combine(workingDir, "today.png");
+        // 画像はリポジトリ直下の Picture フォルダに保存（存在しなければ作成）
+        var pictureDir = Path.Combine(workingDir, "Picture");
+        Directory.CreateDirectory(pictureDir);
+        var outputPath = Path.Combine(pictureDir, outputFileName);
 
         Console.WriteLine($"Loading font from: {fontPath}");
         Console.WriteLine($"Saving image to: {outputPath}");
