@@ -30,6 +30,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add today.png
+          # Picture フォルダ内の変更をステージ（フォルダが無ければ警告を出して継続）
+          git add Picture || echo "No Picture directory or no changes to add"
           git commit -m "Update daily topic" || echo "No changes"
           git push
