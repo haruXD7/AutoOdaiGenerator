@@ -32,7 +32,8 @@ class Program
         {
             new { FileName = "today_vrchat.png", ThemeLine = "テーマはVRCHATのような仮想空間についてにしてください。" },
             new { FileName = "today_ai.png", ThemeLine = "テーマはAIと社会についてにしてください。" },
-            new { FileName = "today_world_news.png", ThemeLine = "テーマは１か月以内の世界情勢についてにしてください" },
+            new { FileName = "today_love.png", ThemeLine = "テーマはVRCHATの恋愛についてにしてください" },
+            new { FileName = "today_philosophy.png", ThemeLine = "テーマは哲学についてにしてください" },
         };
 
         foreach (var t in themes)
